@@ -56,3 +56,6 @@ temp_videos/
 
 # Downloaded audio files
 downloades/
+
+# Vector database cache files
+vector_db/
