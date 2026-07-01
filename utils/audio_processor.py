@@ -11,6 +11,8 @@ def download_youtube_audio(url :str) ->str:
     ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": output_path,
+        "source_address": "0.0.0.0", # Force IPv4 to avoid SSL EOF errors on cloud servers
+        "legacyserverconnect": True,
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
