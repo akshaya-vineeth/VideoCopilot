@@ -11,12 +11,22 @@ def download_youtube_audio(url :str) ->str:
     ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": output_path,
-        "source_address": "0.0.0.0", # Force IPv4 to avoid SSL EOF errors on cloud servers
-        "legacyserverconnect": True,
+        "source_address": "0.0.0.0",       # Force IPv4
+        "legacyserverconnect": True,         # Help with SSL handshake issues
+        "nocheckcertificate": True,          # Skip SSL cert verification (fixes HF Spaces SSL EOF)
+        "geo_bypass": True,                  # Bypass geo-restrictions
         "extractor_args": {
             "youtube": {
-                "player_client": ["android", "web"]
+                "player_client": ["ios", "android", "web"]  # ios client is most reliable on cloud
             }
+        },
+        "http_headers": {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            ),
+            "Accept-Language": "en-US,en;q=0.9",
         },
         "postprocessors": [
             {
