@@ -1,6 +1,27 @@
+import ssl
 import yt_dlp
 from pydub import AudioSegment
 import os
+
+# ── SSL fix for Hugging Face Spaces ──────────────────────────────────────────
+# Python 3.10 raises SSLEOFError when servers close connections without
+# sending a proper close_notify (common with YouTube on cloud IPs).
+# This patch makes the default SSL context tolerate that behaviour.
+try:
+    _orig_ctx = ssl.create_default_context
+
+    def _patched_ctx(*args, **kwargs):
+        ctx = _orig_ctx(*args, **kwargs)
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        # Allow legacy server connections (no close_notify)
+        ctx.options |= getattr(ssl, "OP_LEGACY_SERVER_CONNECT", 0)
+        return ctx
+
+    ssl.create_default_context = _patched_ctx
+except Exception:
+    pass  # If patching fails, continue anyway
+# ─────────────────────────────────────────────────────────────────────────────
 
 DOWNLOAD_DIR = 'downloades'
 os.makedirs(DOWNLOAD_DIR,exist_ok = True)
