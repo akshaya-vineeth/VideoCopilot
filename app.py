@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 import os
 import shutil
 from uuid import uuid4
@@ -38,39 +38,48 @@ def process_video(request: VideoRequest):
     """
     Process a video from a YouTube URL or local file path and return the analysis.
     """
-    result = run_pipeline(source=request.source, language=request.language)
-    # RAG chain is not serializable, so we remove it from the response.
-    if "rag_chain" in result:
-        del result["rag_chain"]
-    return result
+    try:
+        result = run_pipeline(source=request.source, language=request.language)
+        # RAG chain is not serializable, so we remove it from the response.
+        if "rag_chain" in result:
+            del result["rag_chain"]
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/upload-video/")
 def upload_video(file: UploadFile = File(...), language: str = Form("english")):
     """
     Process a video uploaded directly to the backend.
     """
-    os.makedirs("temp_videos", exist_ok=True)
-    file_path = f"temp_videos/{uuid4()}_{file.filename}"
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    
-    result = run_pipeline(source=file_path, language=language)
-    
-    if os.path.exists(file_path):
-        os.remove(file_path)
+    try:
+        os.makedirs("temp_videos", exist_ok=True)
+        file_path = f"temp_videos/{uuid4()}_{file.filename}"
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        result = run_pipeline(source=file_path, language=language)
+        
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
-    if "rag_chain" in result:
-        del result["rag_chain"]
-    return result
+        if "rag_chain" in result:
+            del result["rag_chain"]
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/ask/")
 def ask(request: QuestionRequest):
     """
     Ask a question about the video transcript.
     """
-    rag_chain = build_rag_chain(request.transcript)
-    answer = ask_question(rag_chain, request.question)
-    return {"answer": answer}
+    try:
+        rag_chain = build_rag_chain(request.transcript)
+        answer = ask_question(rag_chain, request.question)
+        return {"answer": answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
